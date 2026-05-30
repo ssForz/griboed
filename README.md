@@ -423,6 +423,9 @@ git push origin main
 - `confusion_matrix.png` — структура ошибок;
 - `metrics.json` — итоговые метрики запуска.
 
+![edible.jpg](reports/example/edible.jpg)
+![non_edible.jpg](reports/example/non_edible.jpg)
+
 В FastAPI-сервисе дополнительно доступен endpoint `GET /monitoring`, который возвращает:
 
 - статус сервиса и uptime;
