@@ -40,4 +40,6 @@ def test_monitoring_returns_service_and_model_state() -> None:
     assert "model" in payload
     assert "prediction_metrics" in payload
     assert "infrastructure" in payload
+    assert "metrics" in payload
     assert isinstance(payload["model"]["loaded"], bool)
+    assert {"accuracy", "precision", "recall", "f1", "roc_auc", "roc-auc"} <= set(payload["metrics"])

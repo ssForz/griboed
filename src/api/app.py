@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -18,6 +19,7 @@ from src.training.train_baseline import CLASS_NAMES, build_model, build_transfor
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MODEL_PATH = PROJECT_ROOT / "models" / "baseline_resnet18.pt"
+DEFAULT_METRICS_PATH = PROJECT_ROOT / "reports" / "baseline" / "best_baseline.json"
 
 UI_HTML = """
 <!doctype html>
@@ -302,6 +304,13 @@ UI_HTML = """
       overflow-wrap: anywhere;
     }
 
+    .subhead {
+      margin: 18px 0 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
     pre {
       margin: 0;
       padding: 12px;
@@ -393,6 +402,15 @@ UI_HTML = """
           <div class="metric"><span>cpu</span><strong id="cpu">0%</strong></div>
           <div class="metric"><span>device</span><strong id="device">-</strong></div>
         </div>
+        <div class="subhead">Качество baseline</div>
+        <div class="grid">
+          <div class="metric"><span>accuracy</span><strong id="qualityAccuracy">-</strong></div>
+          <div class="metric"><span>precision</span><strong id="qualityPrecision">-</strong></div>
+          <div class="metric"><span>recall</span><strong id="qualityRecall">-</strong></div>
+          <div class="metric"><span>f1</span><strong id="qualityF1">-</strong></div>
+          <div class="metric"><span>roc-auc</span><strong id="qualityRocAuc">-</strong></div>
+          <div class="metric"><span>split</span><strong id="qualitySplit">-</strong></div>
+        </div>
         <div style="height:14px"></div>
         <pre id="rawMonitoring">{}</pre>
       </div>
@@ -413,6 +431,10 @@ UI_HTML = """
 
     function pct(value) {
       return `${Math.round(Number(value) * 1000) / 10}%`;
+    }
+
+    function metricPct(value) {
+      return value === null || value === undefined ? "-" : pct(value);
     }
 
     function setError(message) {
@@ -495,6 +517,14 @@ UI_HTML = """
       document.getElementById("memory").textContent = `${Math.round(payload.infrastructure.memory_percent)}%`;
       document.getElementById("cpu").textContent = `${Math.round(payload.infrastructure.cpu_percent)}%`;
       document.getElementById("device").textContent = payload.infrastructure.device;
+
+      const metrics = payload.metrics || {};
+      document.getElementById("qualityAccuracy").textContent = metricPct(metrics.accuracy);
+      document.getElementById("qualityPrecision").textContent = metricPct(metrics.precision);
+      document.getElementById("qualityRecall").textContent = metricPct(metrics.recall);
+      document.getElementById("qualityF1").textContent = metricPct(metrics.f1);
+      document.getElementById("qualityRocAuc").textContent = metricPct(metrics.roc_auc);
+      document.getElementById("qualitySplit").textContent = metrics.available ? metrics.split : "-";
       document.getElementById("rawMonitoring").textContent = JSON.stringify(payload, null, 2);
     }
 
@@ -525,6 +555,10 @@ app = FastAPI(
 
 def get_model_path() -> Path:
     return Path(os.getenv("MODEL_PATH", DEFAULT_MODEL_PATH)).resolve()
+
+
+def get_metrics_path() -> Path:
+    return Path(os.getenv("METRICS_PATH", DEFAULT_METRICS_PATH)).resolve()
 
 
 def get_model_name() -> str:
@@ -577,6 +611,51 @@ def load_model() -> tuple[torch.nn.Module, dict[str, Any]]:
         "device": str(get_device()),
     }
     return model, metadata
+
+
+def load_model_quality_metrics() -> dict[str, Any]:
+    metrics_path = get_metrics_path()
+    base_response: dict[str, Any] = {
+        "available": False,
+        "source_path": str(metrics_path),
+        "split": "test",
+        "positive_class": "non_edible",
+        "accuracy": None,
+        "precision": None,
+        "recall": None,
+        "f1": None,
+        "roc_auc": None,
+        "roc-auc": None,
+        "load_error": None,
+    }
+
+    if not metrics_path.exists():
+        return {
+            **base_response,
+            "load_error": f"Metrics file not found: {metrics_path}",
+        }
+
+    try:
+        with metrics_path.open("r", encoding="utf-8") as file:
+            payload = json.load(file)
+    except (OSError, json.JSONDecodeError) as exc:
+        return {
+            **base_response,
+            "load_error": f"Could not read metrics file: {exc}",
+        }
+
+    test_metrics = payload.get("test_metrics", {})
+    return {
+        **base_response,
+        "available": True,
+        "positive_class": payload.get("positive_class", "non_edible"),
+        "accuracy": test_metrics.get("accuracy"),
+        "precision": test_metrics.get("precision_non_edible", test_metrics.get("precision")),
+        "recall": test_metrics.get("recall_non_edible", test_metrics.get("recall")),
+        "f1": test_metrics.get("f1_non_edible", test_metrics.get("f1")),
+        "roc_auc": test_metrics.get("roc_auc"),
+        "roc-auc": test_metrics.get("roc_auc"),
+    }
 
 
 try:
@@ -702,11 +781,5 @@ def monitoring() -> dict[str, Any]:
             "cuda_available": torch.cuda.is_available(),
             "device": str(get_device()),
         },
-        "metrics": {
-            "accuracy": "",
-            "recall": "",
-            "precision": "",
-            "f1": "",
-            "roc-auc": ""
-        }
+        "metrics": load_model_quality_metrics(),
     }
