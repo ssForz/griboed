@@ -1,0 +1,47 @@
+{
+  "model_name": "resnet18",
+  "model_path": "models\\baseline_resnet18.pt",
+  "data_dir": "data\\processed",
+  "device": "cuda",
+  "classes": [
+    "edible",
+    "non_edible"
+  ],
+  "positive_class": "non_edible",
+  "dataset_sizes": {
+    "train": 2256,
+    "val": 282,
+    "test": 282
+  },
+  "hyperparameters": {
+    "epochs": 20,
+    "batch_size": 32,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "image_size": 224,
+    "pretrained": false,
+    "freeze_backbone": false,
+    "early_stopping_patience": 6,
+    "lr_patience": 3,
+    "seed": 42
+  },
+  "best_val_f1": 0.8549618320610687,
+  "best_epoch": 19,
+  "last_val_metrics": {
+    "loss": 0.3710551042083307,
+    "accuracy": 0.8652482269503546,
+    "precision": 0.8615384615384616,
+    "recall": 0.8484848484848485,
+    "f1": 0.8549618320610687,
+    "roc_auc": 0.9295959595959595
+  },
+  "test_metrics": {
+    "loss": 0.3697347140058558,
+    "accuracy": 0.8971631205673759,
+    "precision": 0.9401709401709402,
+    "recall": 0.8333333333333334,
+    "f1": 0.8835341365461847,
+    "roc_auc": 0.9354545454545455
+  },
+  "elapsed_seconds": 209.3079445000003
+}
