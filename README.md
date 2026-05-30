@@ -240,6 +240,27 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe src\training\train_baseline.py
 ```
 
+## Тестирование
+
+Тесты написаны на `pytest` и лежат в папке [tests](tests).
+
+Покрыты:
+
+- извлечение вида гриба из имени файла;
+- чтение метаданных изображения;
+- preprocessing изображения в RGB JPEG нужного размера;
+- создание структуры `data/processed`;
+- генерация метаданных датасета и подсчёт дубликатов;
+- smoke-проверка трансформаций и baseline-модели.
+
+Файл [tests/conftest.py](tests/conftest.py) добавляет корень проекта в `sys.path`, чтобы импорты вида `from src...` корректно работали при запуске тестов из IDE и из терминала.
+
+Команда запуска из корня проекта:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest tests -q
+```
+
 ## Структура проекта
 
 ```text
@@ -255,9 +276,15 @@ python -m pip install -r requirements.txt
 │   └── data_quality/
 ├── src/
 │   ├── data/
+│   │   ├── __init__.py
 │   │   └── prepare_dataset.py
 │   └── training/
+│       ├── __init__.py
 │       └── train_baseline.py
+├── tests/
+│   ├── conftest.py
+│   ├── test_prepare_dataset.py
+│   └── test_train_baseline.py
 ├── .gitignore
 ├── requirements.txt
 └── README.md
@@ -298,11 +325,11 @@ python -m pip install -r requirements.txt
 - обучение baseline CNN;
 - сохранение модели, метрик и графиков;
 - фиксация лучшего baseline;
+- pytest-тесты для preprocessing и training pipeline;
 - `.gitignore` для данных, окружения, моделей и служебных файлов.
 
 Следующие шаги:
 
-- добавить `pytest`-тесты для preprocessing и training pipeline;
 - добавить Dockerfile;
 - настроить GitHub Actions для тестов;
 - подготовить презентацию на 5-7 слайдов.
