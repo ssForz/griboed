@@ -34,9 +34,11 @@ jobs:
       - name: Check Python syntax
         run: |
           python -m py_compile \
+            src/api/app.py \
             src/data/prepare_dataset.py \
             src/training/train_baseline.py \
             tests/conftest.py \
+            tests/test_api.py \
             tests/test_prepare_dataset.py \
             tests/test_train_baseline.py
 
