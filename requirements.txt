@@ -8,3 +8,7 @@ tqdm
 torch
 torchvision
 pytest
+fastapi
+uvicorn[standard]
+python-multipart
+psutil

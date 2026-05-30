@@ -240,6 +240,33 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe src\training\train_baseline.py
 ```
 
+Запуск FastAPI-сервиса локально:
+
+```powershell
+.\.venv\Scripts\uvicorn.exe src.api.app:app --host 0.0.0.0 --port 8000
+```
+
+Основные endpoint'ы сервиса:
+
+- `POST /predict` — принимает изображение и возвращает предсказанный класс, confidence и вероятности по классам;
+- `GET /monitoring` — возвращает состояние сервиса, состояние модели, счётчики запросов, среднюю latency и инфраструктурные метрики;
+- `GET /ui` — простая web-страница для загрузки изображения, просмотра prediction-результата и текущего мониторинга.
+
+После запуска локальный UI доступен по адресу: <http://localhost:8000/ui>.
+
+Пример prediction-запроса:
+
+```powershell
+curl.exe -X POST "http://localhost:8000/predict" `
+  -F "file=@data/processed/test/edible/edible_000000.jpg"
+```
+
+Пример monitoring-запроса:
+
+```powershell
+curl.exe "http://localhost:8000/monitoring"
+```
+
 ## Тестирование
 
 Тесты написаны на `pytest` и лежат в папке [tests](tests).
@@ -251,7 +278,8 @@ python -m pip install -r requirements.txt
 - preprocessing изображения в RGB JPEG нужного размера;
 - создание структуры `data/processed`;
 - генерация метаданных датасета и подсчёт дубликатов;
-- smoke-проверка трансформаций и baseline-модели.
+- smoke-проверка трансформаций и baseline-модели;
+- smoke-проверка FastAPI endpoint'ов `/`, `/ui` и `/monitoring`.
 
 Файл [tests/conftest.py](tests/conftest.py) добавляет корень проекта в `sys.path`, чтобы импорты вида `from src...` корректно работали при запуске тестов из IDE и из терминала.
 
@@ -263,37 +291,43 @@ python -m pip install -r requirements.txt
 
 ## Docker
 
-Контейнеризация реализована через [Dockerfile](Dockerfile). В образ копируются только код, тесты, README и зависимости. Локальные данные, модели, отчёты, `.venv` и служебные файлы исключены через [.dockerignore](.dockerignore).
+Контейнеризация реализована через [Dockerfile](Dockerfile) и [docker-compose.yml](docker-compose.yml). Основной способ запуска сервиса — Docker Compose. В образ копируются только код, тесты, README и зависимости. Локальные данные, модели, отчёты, `.venv` и служебные файлы исключены через [.dockerignore](.dockerignore).
 
-Образ по умолчанию запускает тесты:
+Сборка образа:
 
 ```powershell
 docker build -t mushroom-classifier .
-docker run --rm mushroom-classifier
 ```
 
-Запуск preprocessing в контейнере. Папка проекта монтируется в `/app`, чтобы контейнер видел локальные `data/raw` и мог записать `data/processed`:
+Запуск API-сервиса:
 
 ```powershell
-docker run --rm `
-  -v "${PWD}:/app" `
-  mushroom-classifier `
-  python src/data/prepare_dataset.py --overwrite
+docker compose up --build api
 ```
 
-Запуск обучения baseline в контейнере:
+После запуска:
+
+- Web UI: <http://localhost:8000/ui>
+- Swagger UI: <http://localhost:8000/docs>
+- prediction endpoint: <http://localhost:8000/predict>
+- monitoring endpoint: <http://localhost:8000/monitoring>
+
+Запуск тестов через compose:
 
 ```powershell
-docker run --rm `
-  -v "${PWD}:/app" `
-  mushroom-classifier `
-  python src/training/train_baseline.py
+docker compose --profile tools run --rm tests
 ```
 
-Если Docker запущен из CMD, вместо `${PWD}` используйте `%cd%`:
+Запуск preprocessing через compose:
 
-```cmd
-docker run --rm -v "%cd%:/app" mushroom-classifier python -m pytest tests -q
+```powershell
+docker compose --profile tools run --rm preprocess
+```
+
+Запуск обучения baseline через compose:
+
+```powershell
+docker compose --profile tools run --rm train
 ```
 
 ## CI/CD
@@ -344,6 +378,9 @@ git push origin main
 │   ├── baseline/
 │   └── data_quality/
 ├── src/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   └── app.py
 │   ├── data/
 │   │   ├── __init__.py
 │   │   └── prepare_dataset.py
@@ -352,11 +389,13 @@ git push origin main
 │       └── train_baseline.py
 ├── tests/
 │   ├── conftest.py
+│   ├── test_api.py
 │   ├── test_prepare_dataset.py
 │   └── test_train_baseline.py
 ├── .dockerignore
 ├── .gitignore
 ├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
 └── README.md
 ```
@@ -384,6 +423,16 @@ git push origin main
 - `confusion_matrix.png` — структура ошибок;
 - `metrics.json` — итоговые метрики запуска.
 
+В FastAPI-сервисе дополнительно доступен endpoint `GET /monitoring`, который возвращает:
+
+- статус сервиса и uptime;
+- информацию о загруженной модели;
+- количество prediction-запросов и ошибок;
+- среднюю latency успешных предсказаний;
+- загрузку CPU, память процесса, доступность CUDA.
+
+Для ручной проверки предсказаний добавлена web-страница `GET /ui`: на ней можно выбрать изображение, отправить его в `/predict`, увидеть confidence и вероятности классов, а также смотреть live-сводку `/monitoring`.
+
 Для дальнейшего развития можно добавить мониторинг распределения входных изображений: размеры, форматы, доли классов, долю невалидных изображений и изменение метрик на новых данных.
 
 ## Текущий статус
@@ -396,8 +445,10 @@ git push origin main
 - обучение baseline CNN;
 - сохранение модели, метрик и графиков;
 - фиксация лучшего baseline;
+- FastAPI-сервис с endpoint'ами `/predict`, `/monitoring` и `/ui`;
+- web UI для ручной проверки предсказаний и мониторинга;
 - pytest-тесты для preprocessing и training pipeline;
-- Dockerfile и `.dockerignore` для контейнеризации пайплайна;
+- Dockerfile, `.dockerignore` и `docker-compose.yml` для контейнеризации пайплайна и сервиса;
 - GitHub Actions workflow для CI;
 - `.gitignore` для данных, окружения, моделей и служебных файлов.
 
