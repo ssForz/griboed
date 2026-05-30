@@ -32,7 +32,6 @@ data/raw/
 data/processed/
 data/interim/
 data/external/
-reports/
 
 # Model and experiment artifacts
 models/
