@@ -261,6 +261,41 @@ python -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pytest tests -q
 ```
 
+## Docker
+
+Контейнеризация реализована через [Dockerfile](Dockerfile). В образ копируются только код, тесты, README и зависимости. Локальные данные, модели, отчёты, `.venv` и служебные файлы исключены через [.dockerignore](.dockerignore).
+
+Образ по умолчанию запускает тесты:
+
+```powershell
+docker build -t mushroom-classifier .
+docker run --rm mushroom-classifier
+```
+
+Запуск preprocessing в контейнере. Папка проекта монтируется в `/app`, чтобы контейнер видел локальные `data/raw` и мог записать `data/processed`:
+
+```powershell
+docker run --rm `
+  -v "${PWD}:/app" `
+  mushroom-classifier `
+  python src/data/prepare_dataset.py --overwrite
+```
+
+Запуск обучения baseline в контейнере:
+
+```powershell
+docker run --rm `
+  -v "${PWD}:/app" `
+  mushroom-classifier `
+  python src/training/train_baseline.py
+```
+
+Если Docker запущен из CMD, вместо `${PWD}` используйте `%cd%`:
+
+```cmd
+docker run --rm -v "%cd%:/app" mushroom-classifier python -m pytest tests -q
+```
+
 ## Структура проекта
 
 ```text
@@ -285,7 +320,9 @@ python -m pip install -r requirements.txt
 │   ├── conftest.py
 │   ├── test_prepare_dataset.py
 │   └── test_train_baseline.py
+├── .dockerignore
 ├── .gitignore
+├── Dockerfile
 ├── requirements.txt
 └── README.md
 ```
@@ -326,10 +363,10 @@ python -m pip install -r requirements.txt
 - сохранение модели, метрик и графиков;
 - фиксация лучшего baseline;
 - pytest-тесты для preprocessing и training pipeline;
+- Dockerfile и `.dockerignore` для контейнеризации пайплайна;
 - `.gitignore` для данных, окружения, моделей и служебных файлов.
 
 Следующие шаги:
 
-- добавить Dockerfile;
 - настроить GitHub Actions для тестов;
 - подготовить презентацию на 5-7 слайдов.
