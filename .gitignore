@@ -1,14 +1,50 @@
-data/raw/*
-data/interim/*
-data/processed/*
-models/*
-!data/raw/.gitkeep
-!data/interim/.gitkeep
-!data/processed/.gitkeep
-!models/.gitkeep
+# Python
 __pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Jupyter
 .ipynb_checkpoints/
+
+# IDE and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Environment variables and local config
 .env
-*.pkl
+.env.*
+!.env.example
+
+# Data artifacts
+data/raw/
+data/processed/
+data/interim/
+data/external/
+
+# Model and experiment artifacts
+models/
+artifacts/
+runs/
+mlruns/
+checkpoints/
 *.pt
 *.pth
+*.onnx
+*.pkl
+*.joblib
+
+# Logs
+logs/
+*.log
