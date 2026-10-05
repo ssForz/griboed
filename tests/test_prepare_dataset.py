@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 from PIL import Image
-
 from src.data.prepare_dataset import (
     CLASS_TO_IDX,
     ImageRecord,
@@ -58,7 +57,9 @@ def test_preprocess_image_outputs_rgb_jpeg_square(tmp_path: Path) -> None:
         assert image.format == "JPEG"
 
 
-def test_prepare_output_dir_refuses_existing_directory_without_overwrite(tmp_path: Path) -> None:
+def test_prepare_output_dir_refuses_existing_directory_without_overwrite(
+    tmp_path: Path,
+) -> None:
     output_dir = tmp_path / "processed"
     output_dir.mkdir()
 
@@ -96,15 +97,56 @@ def test_build_record_maps_poisonous_to_non_edible(tmp_path: Path) -> None:
     )
 
 
-def test_write_metadata_counts_classes_and_cross_split_duplicates(tmp_path: Path) -> None:
+def test_write_metadata_counts_classes_and_cross_split_duplicates(
+    tmp_path: Path,
+) -> None:
     output_dir = tmp_path / "processed"
     raw_dir = tmp_path / "raw"
     output_dir.mkdir()
 
     records = [
-        ImageRecord("train", "edible", "edible", 0, "A", "train_a.jpg", "out_1.jpg", 10, 10, "RGB", "JPEG", "hash_a"),
-        ImageRecord("val", "edible", "edible", 0, "A", "val_a.jpg", "out_2.jpg", 10, 10, "RGB", "JPEG", "hash_a"),
-        ImageRecord("test", "poisonous", "non_edible", 1, "B", "test_b.jpg", "out_3.jpg", 10, 10, "RGB", "JPEG", "hash_b"),
+        ImageRecord(
+            "train",
+            "edible",
+            "edible",
+            0,
+            "A",
+            "train_a.jpg",
+            "out_1.jpg",
+            10,
+            10,
+            "RGB",
+            "JPEG",
+            "hash_a",
+        ),
+        ImageRecord(
+            "val",
+            "edible",
+            "edible",
+            0,
+            "A",
+            "val_a.jpg",
+            "out_2.jpg",
+            10,
+            10,
+            "RGB",
+            "JPEG",
+            "hash_a",
+        ),
+        ImageRecord(
+            "test",
+            "poisonous",
+            "non_edible",
+            1,
+            "B",
+            "test_b.jpg",
+            "out_3.jpg",
+            10,
+            10,
+            "RGB",
+            "JPEG",
+            "hash_b",
+        ),
     ]
 
     write_metadata(
