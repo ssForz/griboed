@@ -1,0 +1,51 @@
+[project]
+name = "griboed"
+version = "0.1.0"
+description = "ML project for mushroom edibility classification"
+requires-python = ">=3.12,<3.13"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+pandas = "^3.0.6"
+numpy = "^2.5.3"
+matplotlib = "^3.11.2"
+seaborn = "^0.13.2"
+pillow = "^12.3.0"
+scikit-learn = "^1.9.1"
+tqdm = "^4.70.1"
+torch = "^2.14.1"
+torchvision = "^0.29.1"
+fastapi = "^0.142.2"
+uvicorn = {extras = ["standard"], version = "^0.54.0"}
+python-multipart = "^0.0.32"
+psutil = "^7.2.2"
+httpx = "^0.28.1"
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+[dependency-groups]
+dev = [
+    "pytest (>=9.1.1,<10.0.0)",
+    "ruff (>=0.16.10,<0.17.0)"
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",
+    "F",
+    "I",
+    "B",
+    "UP",
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

@@ -13,6 +13,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 try:
     from tqdm import tqdm
 except ImportError:
+
     def tqdm(iterable, **_kwargs):
         return iterable
 
@@ -168,8 +169,7 @@ def prepare_output_dir(output_dir: Path, overwrite: bool, dry_run: bool) -> None
     if output_dir.exists():
         if not overwrite:
             raise FileExistsError(
-                f"Output directory already exists: {output_dir}. "
-                "Use --overwrite to rebuild it."
+                f"Output directory already exists: {output_dir}. Use --overwrite to rebuild it."
             )
         shutil.rmtree(output_dir)
 
@@ -187,9 +187,7 @@ def build_record(
 ) -> ImageRecord:
     label = TARGET_LABELS[source_label]
     relative_output_path = (
-        Path(split)
-        / label
-        / f"{label}_{image_index:06d}{source_path.suffix.lower()}"
+        Path(split) / label / f"{label}_{image_index:06d}{source_path.suffix.lower()}"
     ).with_suffix(".jpg")
     width, height, mode, image_format = read_image_metadata(source_path)
 
@@ -229,32 +227,21 @@ def write_metadata(
 ) -> None:
     split_counts = {
         split: {
-            label: sum(
-                record.split == split and record.label == label
-                for record in records
-            )
+            label: sum(record.split == split and record.label == label for record in records)
             for label in CLASS_TO_IDX
         }
         for split in SPLITS
     }
     class_counts = {
-        label: sum(record.label == label for record in records)
-        for label in CLASS_TO_IDX
+        label: sum(record.label == label for record in records) for label in CLASS_TO_IDX
     }
     duplicate_groups = {}
 
     for record in records:
         duplicate_groups.setdefault(record.sha256, []).append(record.source_path)
 
-    duplicates = {
-        digest: paths
-        for digest, paths in duplicate_groups.items()
-        if len(paths) > 1
-    }
-    source_path_to_split = {
-        record.source_path: record.split
-        for record in records
-    }
+    duplicates = {digest: paths for digest, paths in duplicate_groups.items() if len(paths) > 1}
+    source_path_to_split = {record.source_path: record.split for record in records}
     cross_split_duplicates = {
         digest: paths
         for digest, paths in duplicates.items()
