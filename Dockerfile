@@ -1,9 +1,11 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    MPLBACKEND=Agg
+    MPLBACKEND=Agg \
+    POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_CREATE=false
 
 WORKDIR /app
 
@@ -14,10 +16,12 @@ RUN apt-get update \
         libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-
 RUN python -m pip install --upgrade pip \
-    && python -m pip install -r requirements.txt
+    && python -m pip install "poetry>=2.0,<3.0"
+
+COPY pyproject.toml poetry.lock ./
+
+RUN poetry install --only main --no-root
 
 COPY README.md .
 COPY src ./src
@@ -31,3 +35,4 @@ USER appuser
 EXPOSE 8000
 
 CMD ["uvicorn", "src.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+
