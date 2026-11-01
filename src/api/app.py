@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from time import perf_counter
-from typing import Any
+from typing import Annotated, Any
 
 import psutil
 import torch
@@ -47,7 +47,8 @@ UI_HTML = """
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     header {
@@ -342,7 +343,8 @@ UI_HTML = """
         <h1>Mushroom Classifier</h1>
         <div class="subtitle">проверка изображения: edible / non_edible</div>
       </div>
-      <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">загрузка</span></div>
+      <div class="status"><span id="statusDot" class="dot"></span>
+        <span id="statusText">загрузка</span></div>
     </div>
   </header>
 
@@ -483,7 +485,8 @@ UI_HTML = """
         if (!response.ok) throw new Error(payload.detail || "Не удалось получить предсказание");
 
         document.getElementById("predictedLabel").textContent = payload.predicted_class;
-        document.getElementById("confidence").textContent = `уверенность ${pct(payload.confidence)}`;
+        document.getElementById("confidence").textContent =
+          `уверенность ${pct(payload.confidence)}`;
         setProbability("edible", payload.probabilities.edible);
         setProbability("nonEdible", payload.probabilities.non_edible);
         result.style.display = "grid";
@@ -504,17 +507,21 @@ UI_HTML = """
       const modelBadge = document.getElementById("modelBadge");
       const modelDot = modelBadge.querySelector(".dot");
 
-      statusText.textContent = payload.service.status === "ok" ? "сервис готов" : "сервис ограничен";
+      statusText.textContent =
+        payload.service.status === "ok" ? "сервис готов" : "сервис ограничен";
       statusDot.className = `dot ${payload.service.status === "ok" ? "ok" : "bad"}`;
-      modelBadge.querySelector("span:last-child").textContent = payload.model.loaded ? "модель загружена" : "модель недоступна";
+      modelBadge.querySelector("span:last-child").textContent =
+        payload.model.loaded ? "модель загружена" : "модель недоступна";
       modelDot.className = `dot ${payload.model.loaded ? "ok" : "bad"}`;
 
       document.getElementById("requests").textContent = payload.prediction_metrics.requests_total;
       document.getElementById("errors").textContent = payload.prediction_metrics.errors_total;
       document.getElementById("latency").textContent =
         `${Math.round(payload.prediction_metrics.average_latency_seconds * 1000)} ms`;
-      document.getElementById("memory").textContent = `${Math.round(payload.infrastructure.memory_percent)}%`;
-      document.getElementById("cpu").textContent = `${Math.round(payload.infrastructure.cpu_percent)}%`;
+      document.getElementById("memory").textContent =
+        `${Math.round(payload.infrastructure.memory_percent)}%`;
+      document.getElementById("cpu").textContent =
+        `${Math.round(payload.infrastructure.cpu_percent)}%`;
       document.getElementById("device").textContent = payload.infrastructure.device;
 
       const metrics = payload.metrics || {};
@@ -697,7 +704,7 @@ def ui() -> HTMLResponse:
 
 
 @app.post("/predict")
-def predict(file: UploadFile = File(...)) -> dict[str, Any]:
+def predict(file: Annotated[UploadFile, File()]) -> dict[str, Any]:
     started = perf_counter()
     state.prediction_requests += 1
 
@@ -729,7 +736,7 @@ def predict(file: UploadFile = File(...)) -> dict[str, Any]:
             "confidence": confidence,
             "probabilities": {
                 class_name: float(probability)
-                for class_name, probability in zip(CLASS_NAMES, probabilities)
+                for class_name, probability in zip(CLASS_NAMES, probabilities, strict=True)
             },
             "latency_seconds": latency,
             "model": MODEL_METADATA,
